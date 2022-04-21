@@ -19,8 +19,6 @@ namespace compute
 
 		void on_key_down(SDL_Keycode key) override;
 
-		void update() override;
-
 	protected:
 
 		void draw();

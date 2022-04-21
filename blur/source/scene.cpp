@@ -173,13 +173,6 @@ void main()
 		}
 	}
 
-	void scene::update()
-	{
-//		float const dt = pimpl_->clock.restart().count();
-//		(void)dt;
-
-	}
-
 	void scene::draw()
 	{
 		gl::Viewport(0, 0, width(), height());
@@ -190,7 +183,7 @@ void main()
 		gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
 		gl::Enable(gl::DEPTH_TEST);
-		gl::DepthFunc(gl::LESS);
+		gl::DepthFunc(gl::LEQUAL);
 
 		pimpl_->simple_program.bind();
 		pimpl_->simple_program["u_camera_transform"] = pimpl_->camera.transform();
