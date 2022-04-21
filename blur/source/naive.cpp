@@ -5,6 +5,13 @@
 #include <psemek/gfx/framebuffer.hpp>
 #include <psemek/gfx/texture.hpp>
 #include <psemek/gfx/renderbuffer.hpp>
+#include <psemek/gfx/painter.hpp>
+#include <psemek/gfx/error.hpp>
+#include <psemek/gfx/query.hpp>
+#include <psemek/geom/camera.hpp>
+#include <psemek/util/clock.hpp>
+#include <psemek/util/to_string.hpp>
+#include <psemek/log/log.hpp>
 
 namespace compute
 {
@@ -109,6 +116,8 @@ void main()
 			void present() override;
 
 		private:
+			util::clock<std::chrono::duration<float>, std::chrono::high_resolution_clock> clock_;
+
 			gfx::framebuffer fbo_;
 			gfx::texture_2d color_buffer_;
 			gfx::renderbuffer depth_buffer_;
@@ -116,6 +125,11 @@ void main()
 			gfx::program blur_program_{naive_vertex, naive_fragment};
 
 			gfx::array vao_;
+
+			gfx::painter painter_;
+
+			gfx::query_pool queries_;
+			GLint duration_ = 0;
 		};
 
 		naive_impl::naive_impl()
@@ -139,6 +153,8 @@ void main()
 
 		void naive_impl::present()
 		{
+			float const dt = clock_.restart().count();
+
 			fbo_.bind();
 			scene::draw();
 
@@ -152,7 +168,26 @@ void main()
 			blur_program_["u_texture_size_inv"] = geom::vector{1.f / width(), 1.f / height()};
 			color_buffer_.bind(0);
 			vao_.bind();
-			gl::DrawArrays(gl::TRIANGLES, 0, 3);
+
+			{
+				auto scope = queries_.begin(gl::TIME_ELAPSED, [this](GLint value){ duration_ = value; });
+				gl::DrawArrays(gl::TRIANGLES, 0, 3);
+			}
+
+			{
+				gfx::painter::text_options opts;
+				opts.scale = 2.f;
+				opts.c = gfx::black;
+				opts.x = gfx::painter::x_align::left;
+				opts.y = gfx::painter::y_align::top;
+
+				painter_.text({20.f, 20.f}, util::to_string("FPS: ", 1.f / dt), opts);
+				painter_.text({20.f, 40.f}, util::to_string("Blur: ", duration_ / 1e6f, "ms"), opts);
+			}
+
+			painter_.render(geom::window_camera{width(), height()}.transform());
+
+			queries_.poll();
 		}
 
 	}

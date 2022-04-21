@@ -14,6 +14,7 @@ namespace compute
 		blur_app()
 			: app::app("Blur", 0)
 		{
+			vsync(false);
 			push_scene(default_scene());
 		}
 	};
