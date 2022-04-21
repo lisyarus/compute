@@ -15,6 +15,8 @@ namespace compute
 		scene();
 		~scene();
 
+		void on_resize(int width, int height) override;
+
 		void on_key_down(SDL_Keycode key) override;
 
 		void update() override;
