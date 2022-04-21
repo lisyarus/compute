@@ -1,0 +1,3 @@
+[submodule "psemek"]
+	path = psemek
+	url = git@bitbucket.org:lisyarus/psemek.git
