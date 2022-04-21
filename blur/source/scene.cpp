@@ -95,7 +95,6 @@ void main()
 	scene::scene()
 		: pimpl_(std::make_unique<impl>())
 	{
-//		cg::box<float, 3> cube_body{{{{-1.f, 1.f}, {-1.f, 1.f}, {-1.f, 1.f}}}};
 		cg::icosahedron<float> cube_body{{0.f, 0.f, 0.f}, 1.f};
 
 		auto const & vertices = cg::vertices(cube_body);
@@ -167,7 +166,7 @@ void main()
 	{
 		app::scene_base::on_key_down(key);
 
-		if (key == SDLK_0)
+		if (key == SDLK_1)
 		{
 			replace_with(naive());
 		}
@@ -205,8 +204,9 @@ void main()
 
 	void scene::replace_with(std::unique_ptr<scene> new_scene)
 	{
-		auto self = parent()->pop_scene();
-		parent()->push_scene(std::move(new_scene));
+		auto app = parent();
+		auto self = app->pop_scene();
+		app->push_scene(std::move(new_scene));
 	}
 
 	std::unique_ptr<scene> default_scene()
