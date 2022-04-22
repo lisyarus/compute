@@ -96,8 +96,8 @@ void main()
 		}
 	}
 
-//	barrier();
 	memoryBarrierShared();
+	barrier();
 
 	if (pixel_coord.x < size.x && pixel_coord.y < size.y)
 	{
@@ -115,7 +115,6 @@ void main()
 
 				ivec2 local = pc - workgroup_origin;
 
-//				sum += coeffs[i] * coeffs[j] * imageLoad(u_input_image, pc);
 				sum += coeffs[i] * coeffs[j] * cache[local.x][local.y];
 			}
 		}
