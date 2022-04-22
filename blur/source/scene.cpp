@@ -19,6 +19,7 @@ namespace compute
 {
 
 	std::unique_ptr<scene> naive();
+	std::unique_ptr<scene> separable();
 
 	static char const simple_vertex[] =
 R"(#version 330
@@ -169,6 +170,10 @@ void main()
 		if (key == SDLK_1)
 		{
 			replace_with(naive());
+		}
+		else if (key == SDLK_2)
+		{
+			replace_with(separable());
 		}
 	}
 
