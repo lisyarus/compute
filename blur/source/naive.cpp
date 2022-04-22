@@ -184,10 +184,12 @@ void main()
 				opts.x = gfx::painter::x_align::left;
 				opts.y = gfx::painter::y_align::top;
 
-				painter_.text({20.f, 20.f}, util::to_string("FPS: ", 1.f / frame_time_.average()), opts);
+				painter_.text({20.f, 20.f}, "Naive", opts);
+
+				painter_.text({20.f, 40.f}, util::to_string("FPS: ", 1.f / frame_time_.average()), opts);
 
 				if (blur_time_.count() > 0)
-					painter_.text({20.f, 40.f}, util::to_string("Blur: ", blur_time_.average(), "ms"), opts);
+					painter_.text({20.f, 60.f}, util::to_string("Blur: ", blur_time_.average(), "ms"), opts);
 			}
 
 			painter_.render(geom::window_camera{width(), height()}.transform());
