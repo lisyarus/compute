@@ -11,7 +11,7 @@
 #include <psemek/geom/camera.hpp>
 #include <psemek/util/clock.hpp>
 #include <psemek/util/to_string.hpp>
-#include <psemek/log/log.hpp>
+#include <psemek/util/moving_average.hpp>
 
 namespace compute
 {
@@ -129,7 +129,9 @@ void main()
 			gfx::painter painter_;
 
 			gfx::query_pool queries_;
-			GLint duration_ = 0;
+
+			util::moving_average<float> frame_time_{32};
+			util::moving_average<float> blur_time_{32};
 		};
 
 		naive_impl::naive_impl()
@@ -154,6 +156,7 @@ void main()
 		void naive_impl::present()
 		{
 			float const dt = clock_.restart().count();
+			frame_time_.push(dt);
 
 			fbo_.bind();
 			scene::draw();
@@ -170,7 +173,7 @@ void main()
 			vao_.bind();
 
 			{
-				auto scope = queries_.begin(gl::TIME_ELAPSED, [this](GLint value){ duration_ = value; });
+				auto scope = queries_.begin(gl::TIME_ELAPSED, [this](GLint value){ blur_time_.push(value / 1e6f); });
 				gl::DrawArrays(gl::TRIANGLES, 0, 3);
 			}
 
@@ -181,8 +184,10 @@ void main()
 				opts.x = gfx::painter::x_align::left;
 				opts.y = gfx::painter::y_align::top;
 
-				painter_.text({20.f, 20.f}, util::to_string("FPS: ", 1.f / dt), opts);
-				painter_.text({20.f, 40.f}, util::to_string("Blur: ", duration_ / 1e6f, "ms"), opts);
+				painter_.text({20.f, 20.f}, util::to_string("FPS: ", 1.f / frame_time_.average()), opts);
+
+				if (blur_time_.count() > 0)
+					painter_.text({20.f, 40.f}, util::to_string("Blur: ", blur_time_.average(), "ms"), opts);
 			}
 
 			painter_.render(geom::window_camera{width(), height()}.transform());
