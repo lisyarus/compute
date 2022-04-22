@@ -23,6 +23,7 @@ namespace compute
 	std::unique_ptr<scene> separable_linear();
 	std::unique_ptr<scene> compute();
 	std::unique_ptr<scene> compute_lds();
+	std::unique_ptr<scene> compute_separable();
 
 	static char const simple_vertex[] =
 R"(#version 330
@@ -206,6 +207,10 @@ void main()
 		else if (key == SDLK_5)
 		{
 			replace_with(compute_lds());
+		}
+		else if (key == SDLK_6)
+		{
+			replace_with(compute_separable());
 		}
 
 		if (key == SDLK_SPACE)
