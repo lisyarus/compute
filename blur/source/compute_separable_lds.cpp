@@ -93,6 +93,7 @@ void main()
 		}
 	}
 
+	memoryBarrierShared();
 	barrier();
 
 	if (pixel_coord.x < size.x && pixel_coord.y < size.y)
@@ -189,6 +190,7 @@ void main()
 		}
 	}
 
+	memoryBarrierShared();
 	barrier();
 
 	if (pixel_coord.x < size.x && pixel_coord.y < size.y)
