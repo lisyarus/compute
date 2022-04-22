@@ -27,7 +27,7 @@ namespace compute
 
 		struct impl;
 
-		std::unique_ptr<impl> pimpl_;
+		std::shared_ptr<impl> pimpl_;
 
 		void replace_with(std::unique_ptr<scene> new_scene);
 	};

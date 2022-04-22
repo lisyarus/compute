@@ -75,6 +75,8 @@ void main()
 	struct scene::impl
 	{
 		util::clock<std::chrono::duration<float>, std::chrono::high_resolution_clock> clock;
+		bool paused = false;
+		float time = 0.f;
 
 		gfx::program simple_program{simple_vertex, simple_fragment};
 		gfx::mesh cube_mesh;
@@ -91,68 +93,83 @@ void main()
 		};
 
 		std::vector<cube_data> cubes;
+
+		impl()
+		{
+			cg::icosahedron<float> cube_body{{0.f, 0.f, 0.f}, 1.f};
+
+			auto const & vertices = cg::vertices(cube_body);
+			auto const & triangles = cg::triangles(cube_body);
+
+			struct vertex
+			{
+				geom::point<float, 3> position;
+				geom::vector<float, 3> normal;
+			};
+
+			std::vector<vertex> mesh_vertices;
+
+			for (auto const & triangle : triangles)
+			{
+				auto v0 = vertices[triangle[0]];
+				auto v1 = vertices[triangle[1]];
+				auto v2 = vertices[triangle[2]];
+
+				auto n = geom::normal(v0, v1, v2);
+
+				mesh_vertices.emplace_back(v0, n);
+				mesh_vertices.emplace_back(v1, n);
+				mesh_vertices.emplace_back(v2, n);
+			}
+
+			cube_mesh.setup<geom::point<float, 3>, geom::vector<float, 3>>();
+			cube_mesh.load(mesh_vertices, gl::TRIANGLES, gl::STATIC_DRAW);
+
+			camera.near_clip = 0.1f;
+			camera.far_clip = 100.f;
+			camera.fov_y = geom::rad(60.f);
+			camera.fov_x = camera.fov_y;
+
+			camera.pos = {0.f, 0.f, 5.f};
+			camera.axes[0] = {1.f, 0.f, 0.f};
+			camera.axes[1] = {0.f, 1.f, 0.f};
+			camera.axes[2] = {0.f, 0.f, 1.f};
+
+			random::generator rng;
+			random::uniform_sphere_vector_distribution<float, 3> random_unit_vector;
+
+			int const count = 5;
+
+			cubes.resize(count * count);
+
+			for (int i = 0; i < cubes.size(); ++i)
+			{
+				auto & cube = cubes[i];
+
+				cube.position = {(i % count) - (count - 1) / 2.f, (i / count) - (count - 1) / 2.f, 0.f};
+				cube.size = 0.5f;
+				cube.rotation_axis = random_unit_vector(rng);
+				cube.rotation_speed = random::uniform<float>(rng, 0.25f, 0.5f);
+				cube.color = {random::uniform<float>(rng), random::uniform<float>(rng), random::uniform<float>(rng), 1.f};
+			}
+		}
+
+		static std::shared_ptr<impl> instance()
+		{
+			static std::weak_ptr<impl> weak_instance;
+
+			if (auto ptr = weak_instance.lock())
+				return ptr;
+
+			auto ptr = std::make_shared<impl>();
+			weak_instance = ptr;
+			return ptr;
+		}
 	};
 
 	scene::scene()
-		: pimpl_(std::make_unique<impl>())
-	{
-		cg::icosahedron<float> cube_body{{0.f, 0.f, 0.f}, 1.f};
-
-		auto const & vertices = cg::vertices(cube_body);
-		auto const & triangles = cg::triangles(cube_body);
-
-		struct vertex
-		{
-			geom::point<float, 3> position;
-			geom::vector<float, 3> normal;
-		};
-
-		std::vector<vertex> mesh_vertices;
-
-		for (auto const & triangle : triangles)
-		{
-			auto v0 = vertices[triangle[0]];
-			auto v1 = vertices[triangle[1]];
-			auto v2 = vertices[triangle[2]];
-
-			auto n = geom::normal(v0, v1, v2);
-
-			mesh_vertices.emplace_back(v0, n);
-			mesh_vertices.emplace_back(v1, n);
-			mesh_vertices.emplace_back(v2, n);
-		}
-
-		pimpl_->cube_mesh.setup<geom::point<float, 3>, geom::vector<float, 3>>();
-		pimpl_->cube_mesh.load(mesh_vertices, gl::TRIANGLES, gl::STATIC_DRAW);
-
-		pimpl_->camera.near_clip = 0.1f;
-		pimpl_->camera.far_clip = 100.f;
-		pimpl_->camera.fov_y = geom::rad(60.f);
-		pimpl_->camera.fov_x = pimpl_->camera.fov_y;
-
-		pimpl_->camera.pos = {0.f, 0.f, 5.f};
-		pimpl_->camera.axes[0] = {1.f, 0.f, 0.f};
-		pimpl_->camera.axes[1] = {0.f, 1.f, 0.f};
-		pimpl_->camera.axes[2] = {0.f, 0.f, 1.f};
-
-		random::generator rng;
-		random::uniform_sphere_vector_distribution<float, 3> random_unit_vector;
-
-		int const count = 5;
-
-		pimpl_->cubes.resize(count * count);
-
-		for (int i = 0; i < pimpl_->cubes.size(); ++i)
-		{
-			auto & cube = pimpl_->cubes[i];
-
-			cube.position = {(i % count) - (count - 1) / 2.f, (i / count) - (count - 1) / 2.f, 0.f};
-			cube.size = 0.5f;
-			cube.rotation_axis = random_unit_vector(rng);
-			cube.rotation_speed = random::uniform<float>(rng, 0.25f, 0.5f);
-			cube.color = {random::uniform<float>(rng), random::uniform<float>(rng), random::uniform<float>(rng), 1.f};
-		}
-	}
+		: pimpl_(impl::instance())
+	{}
 
 	scene::~scene() = default;
 
@@ -175,13 +192,21 @@ void main()
 		{
 			replace_with(separable());
 		}
+
+		if (key == SDLK_SPACE)
+		{
+			pimpl_->paused = !pimpl_->paused;
+		}
 	}
 
 	void scene::draw()
 	{
 		gl::Viewport(0, 0, width(), height());
 
-		float const time = pimpl_->clock.count();
+		float const dt = pimpl_->clock.restart().count();
+
+		if (!pimpl_->paused)
+			pimpl_->time += dt;
 
 		gl::ClearColor(0.8f, 0.8f, 1.f, 0.f);
 		gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
@@ -199,7 +224,7 @@ void main()
 		{
 			pimpl_->simple_program["u_object_transform"] =
 				geom::translation<float, 3>(cube.position - cube.position.zero()).homogeneous_matrix() *
-				geom::axis_rotation<float>(cube.rotation_axis, time * cube.rotation_speed).homogeneous_matrix() *
+				geom::axis_rotation<float>(cube.rotation_axis, pimpl_->time * cube.rotation_speed).homogeneous_matrix() *
 				geom::scale<float, 3>(cube.size).homogeneous_matrix();
 			pimpl_->simple_program["u_object_color"] = cube.color;
 
