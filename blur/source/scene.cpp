@@ -214,6 +214,9 @@ void main()
 		gl::Enable(gl::DEPTH_TEST);
 		gl::DepthFunc(gl::LEQUAL);
 
+		gl::Disable(gl::BLEND);
+		gl::Enable(gl::CULL_FACE);
+
 		pimpl_->simple_program.bind();
 		pimpl_->simple_program["u_camera_transform"] = pimpl_->camera.transform();
 		pimpl_->simple_program["u_camera_position"] = pimpl_->camera.position();
